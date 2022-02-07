@@ -1,3 +1,5 @@
+/*
+ */
 //+------------------------------------------------------------------+
 //| Module: ZmqMsg.mqh                                               |
 //| This file is part of the mql-zmq project:                        |
@@ -29,124 +31,135 @@
 // = 4 on 32bit
 // hopefully MetaQuotes do malloc structs
 // aligned on pointer address boundaries
-struct zmq_msg_t
-  {
-   uchar             _[64];
-  };
+struct zmq_msg_t {
+	uchar _[64];
+};
 
 #import "libzmq.dll"
 int zmq_msg_init(zmq_msg_t &msg);
-int zmq_msg_init_size(zmq_msg_t &msg,size_t size);
-// As mt4 can not provide a zmq_free_fn, and can not let 
+int zmq_msg_init_size(zmq_msg_t &msg, size_t size);
+// As mt4 can not provide a zmq_free_fn, and can not let
 // zmq library own the array data, copying is always needed.
 // Therefore this function will not be used by this binding.
 // int zmq_msg_init_data(zmq_msg_t &msg,uchar &data[],
 //                       int size,int ffn,int hint);
 int zmq_msg_close(zmq_msg_t &msg);
-int zmq_msg_move(zmq_msg_t &dest,zmq_msg_t &src);
-int zmq_msg_copy(zmq_msg_t &dest,zmq_msg_t &src);
+int zmq_msg_move(zmq_msg_t &dest, zmq_msg_t &src);
+int zmq_msg_copy(zmq_msg_t &dest, zmq_msg_t &src);
 // char *
 intptr_t zmq_msg_data(zmq_msg_t &msg);
 int zmq_msg_size(zmq_msg_t &msg);
 int zmq_msg_more(zmq_msg_t &msg);
-int zmq_msg_get(zmq_msg_t &msg,int property);
-int zmq_msg_set(zmq_msg_t &msg,int property,int optval);
+int zmq_msg_get(zmq_msg_t &msg, int property);
+int zmq_msg_set(zmq_msg_t &msg, int property, int optval);
 // const char *
-intptr_t zmq_msg_gets(zmq_msg_t &msg,const char &property[]);
+intptr_t zmq_msg_gets(zmq_msg_t &msg, const char &property[]);
+#ifdef __MQLBUILD__
 #import
+#endif
+
 //+------------------------------------------------------------------+
 //| Wraps a zmq_msg_t                                                |
 //+------------------------------------------------------------------+
-struct ZmqMsg: public zmq_msg_t
-  {
+struct ZmqMsg : public zmq_msg_t {
 protected:
-   int               get(int property) {return zmq_msg_get(this,property);}
-   bool              set(int property,int value) {return 0==zmq_msg_set(this,property,value);}
-   intptr_t          data() {return zmq_msg_data(this);}
-   bool              setStringData(string data,bool nullterminated=false);
+	int get(int property) { return zmq_msg_get(this, property); }
+	bool set(int property, int value) { return 0 == zmq_msg_set(this, property, value); }
+	intptr_t data() { return zmq_msg_data(this); }
+	bool setStringData(string data, bool nullterminated = false);
+
 public:
-                     ZmqMsg() {zmq_msg_init(this);}
-                     ZmqMsg(int size) {if(0!=zmq_msg_init_size(this,size)){Debug("Failed to init size msg: insufficient space");}}
-                     ZmqMsg(string data,bool nullterminated=false) {setStringData(data,nullterminated);}
-                    ~ZmqMsg() {if(0!=zmq_msg_close(this)){Debug("Failed to close msg");}}
+	ZmqMsg() { zmq_msg_init(this); }
+	ZmqMsg(int size) {
+		if (0 != zmq_msg_init_size(this, size)) {
+			Debug("Failed to init size msg: insufficient space");
+		}
+	}
+	ZmqMsg(string data, bool nullterminated = false) { setStringData(data, nullterminated); }
+	~ZmqMsg() {
+		if (0 != zmq_msg_close(this)) {
+			Debug("Failed to close msg");
+		}
+	}
 
-   bool              rebuild()
-     {
-      if(0!=zmq_msg_close(this)){Debug("Failed to close msg");return false;}
-      return 0==zmq_msg_init(this);
-     }
-   bool              rebuild(int size)
-     {
-      if(0!=zmq_msg_close(this)){Debug("Failed to close msg");return false;}
-      return 0==zmq_msg_init_size(this,size);
-     }
-   bool              rebuild(string data,bool nullterminated=false)
-     {
-      if(0!=zmq_msg_close(this)){Debug("Failed to close msg");return false;}
-      return setStringData(data,nullterminated);
-     }
+	bool rebuild() {
+		if (0 != zmq_msg_close(this)) {
+			Debug("Failed to close msg");
+			return false;
+		}
+		return 0 == zmq_msg_init(this);
+	}
+	bool rebuild(int size) {
+		if (0 != zmq_msg_close(this)) {
+			Debug("Failed to close msg");
+			return false;
+		}
+		return 0 == zmq_msg_init_size(this, size);
+	}
+	bool rebuild(string data, bool nullterminated = false) {
+		if (0 != zmq_msg_close(this)) {
+			Debug("Failed to close msg");
+			return false;
+		}
+		return setStringData(data, nullterminated);
+	}
 
-   size_t            size() {return zmq_msg_size(this);}
+	size_t size() { return zmq_msg_size(this); }
 
-   void              getData(uchar &bytes[]);
-   string            getData();
-   void              setData(const uchar &bytes[]);
+	void getData(uchar &bytes[]);
+	string getData();
+	void setData(const uchar &bytes[]);
 
-   bool              more() {return 1==zmq_msg_more(this);}
+	bool more() { return 1 == zmq_msg_more(this); }
 
-   bool              copy(ZmqMsg &msg) {return 0 == zmq_msg_copy(this, msg);}
-   bool              move(ZmqMsg &msg) {return 0 == zmq_msg_move(this, msg);}
+	bool copy(ZmqMsg &msg) { return 0 == zmq_msg_copy(this, msg); }
+	bool move(ZmqMsg &msg) { return 0 == zmq_msg_move(this, msg); }
 
-   string            meta(const string property);
-  };
+	string meta(const string property);
+};
 //+------------------------------------------------------------------+
 //| Initialize a utf-8 string message                                |
 //+------------------------------------------------------------------+
-bool ZmqMsg::setStringData(string data,bool nullterminated)
-  {
-   uchar array[];
-   StringToUtf8(data,array,nullterminated);
-   bool res=(0==zmq_msg_init_size(this,ArraySize(array)));
-   if(res)setData(array);
-   return res;
-  }
+bool ZmqMsg::setStringData(string data, bool nullterminated) {
+	uchar array[];
+	StringToUtf8(data, array, nullterminated);
+	bool res = (0 == zmq_msg_init_size(this, ArraySize(array)));
+	if (res) setData(array);
+	return res;
+}
 //+------------------------------------------------------------------+
 //| Get message data as bytes array                                  |
 //+------------------------------------------------------------------+
-void ZmqMsg::getData(uchar &bytes[])
-  {
-   size_t size=size();
-   intptr_t src=data();
-   if(ArraySize(bytes)<size) ArrayResize(bytes,(int)size);
-   ArrayFromPointer(bytes,src);
-  }
+void ZmqMsg::getData(uchar &bytes[]) {
+	size_t size = size();
+	intptr_t src = data();
+	if (ArraySize(bytes) < size) ArrayResize(bytes, (int)size);
+	ArrayFromPointer(bytes, src);
+}
 //+------------------------------------------------------------------+
 //| Get message data as utf-8 string                                 |
 //+------------------------------------------------------------------+
-string ZmqMsg::getData()
-  {
-   size_t size=size();
-   intptr_t psz=data();
-   return StringFromUtf8Pointer(psz,(int)size);
-  }
+string ZmqMsg::getData() {
+	size_t size = size();
+	intptr_t psz = data();
+	return StringFromUtf8Pointer(psz, (int)size);
+}
 //+------------------------------------------------------------------+
 //| copy data to message internal storage                            |
 //+------------------------------------------------------------------+
-void ZmqMsg::setData(const uchar &bytes[])
-  {
-   intptr_t dest=data();
-   size_t size=size();
-   ArrayToPointer(bytes,dest,(int)size);
-  }
+void ZmqMsg::setData(const uchar &bytes[]) {
+	intptr_t dest = data();
+	size_t size = size();
+	ArrayToPointer(bytes, dest, (int)size);
+}
 //+------------------------------------------------------------------+
 //| Wraps zmq_msg_gets: get metadata associated with the msg         |
 //+------------------------------------------------------------------+
-string ZmqMsg::meta(const string property)
-  {
-   uchar buf[];
-   StringToUtf8(property,buf);
-   intptr_t ref=zmq_msg_gets(this,buf);
-   ArrayFree(buf);
-   return StringFromUtf8Pointer(ref);
-  }
+string ZmqMsg::meta(const string property) {
+	uchar buf[];
+	StringToUtf8(property, buf);
+	intptr_t ref = zmq_msg_gets(this, buf);
+	ArrayFree(buf);
+	return StringFromUtf8Pointer(ref);
+}
 //+------------------------------------------------------------------+

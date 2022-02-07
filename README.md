@@ -8,6 +8,15 @@ Our work depends heavily on this library, but we don't have to add new feature. 
 
 We will be about to investigate new feature or newer libzmq version (like 4.3.x)
 
+You must at least put https://github.com/kiwi0530/mql4-lib/ in MT4/Include/Mql (just like before) and make sure Mql/Lang folder exist for only for "This" fork to work
+
+
+Major change from original
+* Add header guard
+* Move function implementation back to class, so cross compatible for both modern c++ compiler and bcc
+* Escape #import so get more syntax compatibility
+* Add mql/lang/mql4syntax.mqh so vscode c/c++ intellisense can completely work
+
 We will NOT provide work for these issues
 * New feature, excepts our projects need it
 * Issue from original repository
